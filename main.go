@@ -8,13 +8,14 @@ import (
 	"text/template"
 	"strings"
 	"path/filepath"
-	"fmt"
+	"reflect"
 )
 
 type Deployment struct {
 	ApiVersion string
 	Kind       string
 	Name       string
+	CodeName   string
 	Version    string
 	Components [] struct {
 		Name         string
@@ -25,9 +26,12 @@ type Deployment struct {
 		Disk         string
 		Distribution string
 		Entrypoint   string
+		Image        string
 		Replicas     int32
 		Scalable     bool
 		Clustering   bool
+		Environment  [] string
+		Volumes      []string
 		Ports [] struct {
 			Name            string
 			Protocol        string
@@ -43,13 +47,20 @@ type Deployment struct {
 			Component string
 			Ports     [] string
 		}
-		LivenessProbe struct {
-			HttpGet struct {
-				Path                string
-				Port                int32
-				InitialDelaySeconds int32
-				PeriodSeconds       int32
+		Healthcheck struct {
+			Command struct {
+				Assertion []string
 			}
+			TcpSocket struct {
+				Port int32
+			}
+			HttpGet struct {
+				Path string
+				Port int32
+			}
+			InitialDelaySeconds int32
+			PeriodSeconds       int32
+			TimeoutSeconds      int32
 		}
 	}
 }
@@ -66,6 +77,12 @@ func getDeployment(filePath string) *Deployment {
 		log.Fatalf("Error parsing yaml file: %v %v", filePath, err)
 	}
 	return c
+}
+
+var fns = template.FuncMap{
+	"last": func(x int, a interface{}) bool {
+		return x == reflect.ValueOf(a).Len() - 1
+	},
 }
 
 func applyTemplate(templateFilePath string, outputFilePath string, data interface{}) {
@@ -86,6 +103,7 @@ func applyTemplate(templateFilePath string, outputFilePath string, data interfac
 	}
 
 	log.Println("Creating file:", outputFilePath)
+	template = template.Funcs(fns)
 	err = template.Execute(outputFile, data)
 	if err != nil {
 		log.Print("Error executing template:", err)
@@ -95,15 +113,17 @@ func applyTemplate(templateFilePath string, outputFilePath string, data interfac
 }
 
 func main() {
-	ex, err := os.Executable()
-	if err != nil {
-		panic(err)
+	exPath := os.Getenv("ARCHIGOS_HOME");
+	if (len(exPath) <= 0) {
+		ex, err := os.Executable()
+		if err != nil {
+			panic(err)
+		}
+		exPath = filepath.Dir(ex)
 	}
-	exPath := filepath.Dir(ex)
-	fmt.Println(exPath)
 
-	deployment := getDeployment(exPath + "/depoyment.yaml")
-	componentNamesMap := map[string]bool {}
+	deployment := getDeployment(exPath + "/examples/wso2is/depoyment.yaml")
+	componentNamesMap := map[string]bool{}
 
 	for _, component := range deployment.Components {
 		if _, ok := componentNamesMap[component.CodeName]; ok {
@@ -111,8 +131,12 @@ func main() {
 		}
 
 		componentNamesMap[component.CodeName] = true
-		templatePath := exPath+"/templates/docker/Dockerfile.template"
-		outputFilePath := exPath+"/output/docker/" + component.CodeName + "/Dockerfile"
+		templatePath := exPath + "/templates/docker/Dockerfile.tmpl"
+		outputFilePath := exPath + "/output/docker/" + component.CodeName + "/Dockerfile"
 		applyTemplate(templatePath, outputFilePath, component)
 	}
+
+	templatePath := exPath + "/templates/docker-compose/docker-compose.tmpl"
+	outputFilePath := exPath + "/output/docker-compose/" + deployment.CodeName + "/docker-compose.yml"
+	applyTemplate(templatePath, outputFilePath, deployment)
 }

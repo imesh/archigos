@@ -1,0 +1,26 @@
+version: '2.3'
+services:{{range .Components}}
+  # {{.Name}}
+  {{.CodeName}}:
+    image: {{.Image}}
+    ports:{{range.Ports}}
+      - {{.Port}}{{end}}{{if .Environment}}
+    environment:{{range .Environment}}
+      - {{.}}{{end}}{{end}}
+    volumes:{{range.Volumes}}
+      - {{.}}{{end}}{{if .Healthcheck.Command.Assertion}}
+    healthcheck:
+      test: [{{$n := len .Healthcheck.Command.Assertion}}{{range  $i, $e := .Healthcheck.Command.Assertion}}{{if $i}}, {{end}}"{{.}}"{{end}}]
+      start_period: {{.Healthcheck.InitialDelaySeconds}}s
+      interval: {{.Healthcheck.PeriodSeconds}}s
+      timeout: {{.Healthcheck.TimeoutSeconds}}s{{end}}{{if .Healthcheck.HttpGet.Port}}
+    healthcheck:
+      test: ["CMD", "curl", "-k", "-f", "https://localhost:{{.Healthcheck.HttpGet.Port}}{{.Healthcheck.HttpGet.Path}}"]
+      start_period: {{.Healthcheck.InitialDelaySeconds}}s
+      interval: {{.Healthcheck.PeriodSeconds}}s
+      timeout: {{.Healthcheck.TimeoutSeconds}}s{{end}}{{if .Dependencies}}
+    depends_on:{{range .Dependencies}}
+      {{.Component}}:
+        condition: service_healthy{{end}}
+      links:{{range .Dependencies}}
+         - {{.Component}}{{end}}{{end}}{{end}}
