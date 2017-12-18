@@ -1,5 +1,7 @@
 # Archigos
 
+![](images/architecture.png)
+
 Archigos (Greek for 'Chief') is an infrastructure resource generator. It makes use of a deployment specification 
 for defining the deployment architecture of any software system and generating resources required for deploying 
 the given software system on Docker, Docker Compose, Kubernetes, OpenShift, Pivotal Cloud Foundry, DC/OS, AWS, 
