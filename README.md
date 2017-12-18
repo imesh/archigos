@@ -47,3 +47,25 @@ components:  # List of components
       initialDelaySeconds: Initial delay in seconds
       periodSeconds: Period in seconds
 ````
+
+## Getting Started
+
+Follow below steps to get started with Gerador:
+
+1. Clone this repository:
+   
+   ```
+   git clone https://github.com/imesh/gerador
+   ```
+
+2. Build the source code:
+
+   ````bash
+   go build
+   ````
+
+3. Run the binary:
+
+   ```bash
+   ./gerador
+   ```
