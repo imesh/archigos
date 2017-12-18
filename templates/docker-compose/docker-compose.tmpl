@@ -22,5 +22,5 @@ services:{{range .Components}}
     depends_on:{{range .Dependencies}}
       {{.Component}}:
         condition: service_healthy{{end}}
-      links:{{range .Dependencies}}
-         - {{.Component}}{{end}}{{end}}{{end}}
+    links:{{range .Dependencies}}
+      - {{.Component}}{{end}}{{end}}{{end}}

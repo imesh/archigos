@@ -161,6 +161,11 @@ components:
   name: Load Balancer
   codeName: lb
   image: dockercloud/haproxy:1.6.3
+  ports:
+    -
+      name: https
+      protocol: HTTPS
+      port: 443
   environment:
     - TIMEOUT=connect 50000, client 50000, server 50000
     - STATS_AUTH=stats:stats
