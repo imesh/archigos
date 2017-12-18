@@ -1,0 +1,1 @@
+ENTRYPOINT ${WSO2_SERVER_HOME}/bin/wso2server.sh

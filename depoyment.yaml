@@ -1,0 +1,176 @@
+apiVersion: 0.1
+kind: Deployment
+name: WSO2 API Manager
+version: 2.1.0
+components:
+-
+  name: WSO2 API Manager 1
+  codeName: wso2am
+  version: 2.1.0
+  cpu: 4
+  memory: 4G
+  disk: 10G
+  distribution: wso2am-2.1.0.zip
+  entrypoint: bin/wso2server.sh
+  replicas: 1
+  scalable: false
+  clustering: false
+  ports:
+  -
+    name: gateway-http
+    protocol: HTTP
+    port: 8280
+    external: true
+    sessionAffinity: true
+  -
+    name: gateway-https
+    protocol: HTTPS
+    port: 8243
+    external: true
+    sessionAffinity: true
+  -
+    name: servlet-http
+    protocol: HTTP
+    port: 9763
+    external: true
+    sessionAffinity: true
+  -
+    name: servlet-https
+    protocol: HTTPS
+    port: 9443
+    external: true
+    sessionAffinity: true
+  -
+    name: broker
+    protocol: TCP
+    port: 5672
+    external: false
+    sessionAffinity: false
+  databases:
+  -
+    name: APIM-DB
+    createScript: database-scripts/apim-db.sql
+  dependencies:
+  -
+    component: api-analytics
+    ports:
+    - thrift-ssl
+    - thrift
+  livenessProbe:
+    httpGet:
+      path: /publisher/site/pages/login.jag
+      port: 9443
+      initialDelaySeconds: 3
+      periodSeconds: 3
+-
+  name: WSO2 API Manager 2
+  codeName: wso2am
+  version: 2.1.0
+  cpu: 4
+  memory: 4G
+  disk: 10G
+  distribution: wso2am-2.1.0.zip
+  entrypoint: bin/wso2server.sh
+  replicas: 1
+  scalable: false
+  clustering: false
+  ports:
+  -
+    name: gateway-http
+    protocol: HTTP
+    port: 8280
+    external: true
+    sessionAffinity: true
+  -
+    name: gateway-https12
+    protocol: HTTPS
+    port: 8243
+    external: true
+    sessionAffinity: true
+  -
+    name: servlet-http
+    protocol: HTTP
+    port: 9763
+    external: true
+    sessionAffinity: true
+  -
+    name: servlet-https
+    protocol: HTTPS
+    port: 9443
+    external: true
+    sessionAffinity: true
+  -
+    name: broker
+    protocol: TCP
+    port: 5672
+    external: false
+    sessionAffinity: false
+  databases:
+  -
+    name: APIM-DB
+  dependencies:
+  -
+    component: api-analytics
+    ports:
+    - thrift-ssl
+    - thrift
+  livenessProbe:
+    httpGet:
+      path: /publisher/site/pages/login.jag
+      port: 9443
+      initialDelaySeconds: 3
+      periodSeconds: 3
+-
+  name: WSO2 API-M Analytics
+  codeName: wso2am-analytics
+  version: 2.1.0
+  cpu: 4
+  memory: 4G
+  disk: 10G
+  distribution: wso2am-analytics-2.1.0.zip
+  entrypoint: bin/wso2server.sh
+  replicas: 1
+  scalable: false
+  clustering: false
+  ports:
+  -
+    name: servlet-http
+    protocol: HTTP
+    port: 9763
+    external: true
+    sessionAffinity: true
+  -
+    name: servlet-https
+    protocol: HTTPS
+    port: 9443
+    external: true
+    sessionAffinity: true
+  -
+    name: thrift-ssl
+    protocol: TCP
+    port: 7711
+    external: false
+    sessionAffinity: false
+  -
+    name: thrift
+    protocol: TCP
+    port: 7611
+    external: false
+    sessionAffinity: false
+  databases:
+  -
+    name: APIM-ANALYTICS-DB
+    createScript: database-scripts/apim-analytics-db.sql
+  dependencies:
+  -
+    component: api-analytics
+    ports:
+    - thrift-ssl
+    - thrift
+  livenessProbe:
+    httpGet:
+      path: /publisher/site/pages/login.jag
+      port: 9443
+      initialDelaySeconds: 3
+      periodSeconds: 3
+
