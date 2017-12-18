@@ -45,6 +45,8 @@ Follow below steps to get started with Archigos:
 
 ## Deployment Specification
 
+The archigos deployment specification has been designed according to standards and guidelines used by Docker, Docker Compose, Kubernetes, DC/OS, AWS Cloud Formation to be able to provide a generic definition for any software deployment:
+
 ````yaml
 specVersion: 0.1
 kind: Deployment
@@ -80,9 +82,12 @@ components:  # List of components
     ports:
     - Name of the dependent component port used
   livenessProbe:
-    httpGet:
+    # Define either httpGet or tcpSocket
+    httpGet: # HTTP liveness probe
       path: Context path of the HTTP endpoint
       port: Port of the HTTP endpoint
-      initialDelaySeconds: Initial delay in seconds
-      periodSeconds: Period in seconds
+    tcpSocket: # TCP liveness probe
+      port: TCP port to be used by the probe
+    initialDelaySeconds: Initial delay in seconds
+    periodSeconds: Period in seconds
 ````
