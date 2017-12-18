@@ -4,6 +4,30 @@ Gerador is an infrastructure resource generator. It makes use of a generic deplo
 deployment architecture of any software system and generating resources required for deploying the given software system
 on Docker, Docker Compose, Kubernetes, OpenShift, Pivotal Cloud Foundry, DC/OS, AWS, Azure and Google Cloud.
 
+## Getting Started
+
+Follow below steps to get started with Gerador:
+
+1. Install the [Go tools](https://golang.org/doc/install) by following the official installation guide.
+
+2. Clone this repository:
+   
+   ```
+   git clone https://github.com/imesh/gerador
+   ```
+
+3. Build the source code:
+
+   ````bash
+   go build
+   ````
+
+4. Run the binary:
+
+   ```bash
+   ./gerador
+   ```
+
 ## Deployment Specification
 
 ````yaml
@@ -47,25 +71,3 @@ components:  # List of components
       initialDelaySeconds: Initial delay in seconds
       periodSeconds: Period in seconds
 ````
-
-## Getting Started
-
-Follow below steps to get started with Gerador:
-
-1. Clone this repository:
-   
-   ```
-   git clone https://github.com/imesh/gerador
-   ```
-
-2. Build the source code:
-
-   ````bash
-   go build
-   ````
-
-3. Run the binary:
-
-   ```bash
-   ./gerador
-   ```
