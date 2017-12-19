@@ -9,7 +9,6 @@ import (
 	"strings"
 	"path/filepath"
 	"flag"
-	"fmt"
 )
 
 const pathSeparator = string(os.PathSeparator)
@@ -109,15 +108,8 @@ func applyTemplate(templateFilePath string, outputFilePath string, data interfac
 	outputFile.Close()
 }
 
-func usage() {
-	fmt.Fprintf(os.Stderr, "usage: example -stderrthreshold=[INFO|WARN|FATAL] -log_dir=[string]\n", )
-	flag.PrintDefaults()
-	os.Exit(2)
-}
-
 func init() {
 	// Initialize glog
-	flag.Usage = usage
 	flag.Parse()
 	flag.Lookup("logtostderr").Value.Set("true")
 
