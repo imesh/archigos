@@ -1,8 +1,34 @@
 apiVersion: 0.1
 kind: Deployment
-name: WSO2 API Manager
+name: WSO2 API Manager Pattern 1
 version: 2.1.0
 components:
+-
+  name: mysql
+  version: 5.7.19
+  cpu: 2
+  memory: 2G
+  disk: 20G
+  image: mysql:5.7.19
+  environment:
+  - MYSQL_ROOT_PASSWORD=wso2carbon
+  replicas: 1
+  scalable: false
+  clustering: false
+  ports:
+  -
+    name: jdbc
+    protocol: TCP
+    port: 3306
+    external: false
+  volumes:
+    - ./mysql/scripts:/docker-entrypoint-initdb.d
+  healthcheck:
+    command:
+      assertion: ["CMD", "mysqladmin" ,"ping", "-uroot", "-pwso2carbon"]
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 60
 -
   name: WSO2 API Manager 1
   codeName: wso2am

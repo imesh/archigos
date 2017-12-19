@@ -1,12 +1,10 @@
 apiVersion: 0.1
 kind: Deployment
 name: WSO2 Identity Server Pattern 1
-codeName: wso2is-pattern-1
 version: 5.4.0
 components:
 -
-  name: MySQL
-  codeName: mysql
+  name: mysql
   version: 5.7.19
   cpu: 2
   memory: 2G
@@ -32,15 +30,14 @@ components:
     periodSeconds: 5
     timeoutSeconds: 60
 -
-  name: WSO2 Identity Server 1
-  codeName: identity-server-1
+  name: identity-server-1
+  codeName: wso2is
   version: 5.4.0
   cpu: 4
   memory: 4G
   disk: 10G
-  distribution: wso2is-2.1.0.zip
+  distribution: wso2is-5.4.0.zip
   entrypoint: bin/wso2server.sh
-  image: wso2is:5.4.0
   environment:
     - EXCLUDE_PORTS=4000,9763
     - VIRTUAL_HOST=https://wso2is
@@ -93,15 +90,14 @@ components:
     periodSeconds: 5
     timeoutSeconds: 120
 -
-  name: WSO2 Identity Server 2
-  codeName: identity-server-2
+  name: identity-server-2
+  codeName: wso2is
   version: 5.4.0
   cpu: 4
   memory: 4G
   disk: 10G
-  distribution: wso2is-2.1.0.zip
+  distribution: wso2is-5.4.0.zip
   entrypoint: bin/wso2server.sh
-  image: wso2is:5.4.0
   environment:
     - EXCLUDE_PORTS=4000,9763
     - VIRTUAL_HOST=https://wso2is
@@ -158,14 +154,14 @@ components:
     periodSeconds: 5
     timeoutSeconds: 120
 -
-  name: HAProxy
-  codeName: haproxy
+  name: haproxy
   image: dockercloud/haproxy:1.6.3
   ports:
     -
       name: https
       protocol: HTTPS
       port: 443
+      hostPort: 443
   environment:
     - TIMEOUT=connect 50000, client 50000, server 50000
     - STATS_AUTH=stats:stats
@@ -174,6 +170,10 @@ components:
     - /var/run/docker.sock:/var/run/docker.sock
     - ./haproxy/cert1.pem:/certs/cert1.pem
   dependencies:
+    -
+      component: identity-server-1
+      ports:
+      - https-servlet
     -
       component: identity-server-2
       ports:

@@ -1,10 +1,9 @@
 version: '2.3'
 services:{{range .Components}}
-  # {{.Name}}
-  {{.CodeName}}:
+  {{.Name}}:
     image: {{.Image}}
     ports:{{range.Ports}}
-      - {{.Port}}{{end}}{{if .Environment}}
+      - {{.Port}}{{if .HostPort}}:{{.HostPort}}{{end}}{{end}}{{if .Environment}}
     environment:{{range .Environment}}
       - {{.}}{{end}}{{end}}
     volumes:{{range.Volumes}}

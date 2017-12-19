@@ -3,20 +3,23 @@ package main
 import (
 	"github.com/ghodss/yaml"
 	"io/ioutil"
-	"log"
+	log "github.com/golang/glog"
 	"os"
 	"text/template"
 	"strings"
 	"path/filepath"
-	"reflect"
+	"flag"
+	"fmt"
 )
+
+const pathSeparator = string(os.PathSeparator)
 
 type Deployment struct {
 	ApiVersion string
 	Kind       string
 	Name       string
-	CodeName   string
 	Version    string
+	Labels     [] map[string]interface{}
 	Components [] struct {
 		Name         string
 		CodeName     string
@@ -30,12 +33,13 @@ type Deployment struct {
 		Replicas     int32
 		Scalable     bool
 		Clustering   bool
-		Environment  [] string
+		Environment  []string
 		Volumes      []string
 		Ports [] struct {
 			Name            string
 			Protocol        string
 			Port            int32
+			HostPort        int32
 			External        bool
 			SessionAffinity bool
 		}
@@ -66,7 +70,7 @@ type Deployment struct {
 }
 
 func getDeployment(filePath string) *Deployment {
-	log.Println("Reading deployment:", filePath)
+	log.Infoln("Reading deployment:", filePath)
 	yamlFile, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		log.Fatalf("Error reading file: %v %v", filePath, err)
@@ -79,17 +83,11 @@ func getDeployment(filePath string) *Deployment {
 	return c
 }
 
-var fns = template.FuncMap{
-	"last": func(x int, a interface{}) bool {
-		return x == reflect.ValueOf(a).Len() - 1
-	},
-}
-
 func applyTemplate(templateFilePath string, outputFilePath string, data interface{}) {
-	log.Println("Applying template", templateFilePath)
+	log.V(2).Infoln("Applying template", templateFilePath)
 	template, err := template.ParseFiles(templateFilePath)
 	if err != nil {
-		log.Print(err)
+		log.Error(err)
 		return
 	}
 
@@ -98,45 +96,95 @@ func applyTemplate(templateFilePath string, outputFilePath string, data interfac
 	os.MkdirAll(outputFolderPath, os.ModePerm);
 	outputFile, err := os.Create(outputFilePath)
 	if err != nil {
-		log.Println("Error creating file:", outputFilePath, err)
+		log.Error("Error creating file:", outputFilePath, err)
 		return
 	}
 
-	log.Println("Creating file:", outputFilePath)
-	template = template.Funcs(fns)
+	log.Infoln("Creating file:", outputFilePath)
 	err = template.Execute(outputFile, data)
 	if err != nil {
-		log.Print("Error executing template:", err)
+		log.Error("Error executing template:", err)
 		return
 	}
 	outputFile.Close()
 }
 
+func usage() {
+	fmt.Fprintf(os.Stderr, "usage: example -stderrthreshold=[INFO|WARN|FATAL] -log_dir=[string]\n", )
+	flag.PrintDefaults()
+	os.Exit(2)
+}
+
+func init() {
+	// Initialize glog
+	flag.Usage = usage
+	flag.Parse()
+	flag.Lookup("logtostderr").Value.Set("true")
+
+}
+
+func generate(executionPath string, deploymentsFolderPath string, filePath string) {
+	deployment := getDeployment(filePath)
+	componentNamesMap := map[string]bool{}
+
+	// Generate dockerfiles
+	for _, component := range deployment.Components {
+		// Read component code name
+		codeName := component.CodeName
+		if codeName == "" {
+			codeName = component.Name
+		}
+
+		if _, ok := componentNamesMap[codeName]; ok {
+			// Dockerfile already generated for component
+			continue
+		}
+		if component.Image != "" {
+			// Docker image specified, do not require to generate dockerfile
+			continue
+		}
+
+		componentNamesMap[codeName] = true
+		templatePath := executionPath + pathSeparator + "templates" + pathSeparator + "docker" + pathSeparator + "Dockerfile.tmpl"
+		outputFilePath := executionPath + pathSeparator + "output" + pathSeparator + "docker" + pathSeparator + codeName + pathSeparator + "Dockerfile"
+		applyTemplate(templatePath, outputFilePath, component)
+	}
+
+	// Generate docker compose template
+	templatePath := executionPath + pathSeparator + "templates" + pathSeparator + "docker-compose" + pathSeparator + "docker-compose.tmpl"
+	outputFilePath := executionPath + pathSeparator + "output" + pathSeparator + "docker-compose"
+	// Append sub folder path
+	fileFolderPath := strings.Replace(filePath, filepath.Base(filePath), "", 1)
+	subFolderPath := strings.Replace(fileFolderPath, deploymentsFolderPath, "", 1)
+	if subFolderPath != "" {
+		outputFilePath = outputFilePath + subFolderPath + "docker-compose.yml"
+	} else {
+		outputFilePath = outputFilePath + pathSeparator + "docker-compose.yml"
+	}
+	applyTemplate(templatePath, outputFilePath, deployment)
+}
+
 func main() {
-	exPath := os.Getenv("ARCHIGOS_HOME");
-	if (len(exPath) <= 0) {
+	executionPath := os.Getenv("ARCHIGOS_HOME");
+	if (len(executionPath) <= 0) {
 		ex, err := os.Executable()
 		if err != nil {
 			panic(err)
 		}
-		exPath = filepath.Dir(ex)
+		executionPath = filepath.Dir(ex)
 	}
 
-	deployment := getDeployment(exPath + "/examples/wso2is/depoyment.yaml")
-	componentNamesMap := map[string]bool{}
+	deploymentFolderPath := executionPath + "/examples"
+	log.Infoln("Execution path: ", executionPath)
+	log.Infoln("Deployments path: ", deploymentFolderPath)
 
-	for _, component := range deployment.Components {
-		if _, ok := componentNamesMap[component.CodeName]; ok {
-			continue
+	err := filepath.Walk(deploymentFolderPath, func(path string, f os.FileInfo, err error) error {
+		if !f.IsDir() {
+			generate(executionPath, deploymentFolderPath, path)
 		}
-
-		componentNamesMap[component.CodeName] = true
-		templatePath := exPath + "/templates/docker/Dockerfile.tmpl"
-		outputFilePath := exPath + "/output/docker/" + component.CodeName + "/Dockerfile"
-		applyTemplate(templatePath, outputFilePath, component)
+		return nil
+	})
+	if err != nil {
+		log.Error(err)
 	}
-
-	templatePath := exPath + "/templates/docker-compose/docker-compose.tmpl"
-	outputFilePath := exPath + "/output/docker-compose/" + deployment.CodeName + "/docker-compose.yml"
-	applyTemplate(templatePath, outputFilePath, deployment)
 }
